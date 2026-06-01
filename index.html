@@ -64,7 +64,7 @@
             width: 100%;
             transition: background-color 0.2s;
         }
-        button:hover {
+        button:hover:not(:disabled) {
             background-color: #2ea043;
         }
         button:disabled {
@@ -127,7 +127,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <img src="https://image.qwenlm.ai/public_source/8fecfbcc-34fc-402a-a935-a083d6fee443/1377574b5-4555-40b2-848d-60779b95e9c2.png" alt="Application Logo" class="logo">
+            <img src="https://image.qwenlm.ai/public_source/8fecfbcc-34fc-402a-a935-a083d6fee443/1adc9785d-afc9-484a-ab03-e5e6a136c423.png" alt="Application Logo" class="logo">
             <h1>فك تشفير ZIP بكلمة مرور</h1>
         </div>
         <div class="content">
@@ -174,18 +174,7 @@
             const resultText = document.getElementById('resultText');
 
             let worker = null;
-
-            const workerCode = `
-                self.onmessage = async function(e) {
-                    const { zipData, password } = e.data;
-                    try {
-                        const files = await fflate.unzip(zipData, { password });
-                        self.postMessage({ found: true, password: password, files: Object.keys(files) });
-                    } catch (err) {
-                        self.postMessage({ found: false, error: err.message });
-                    }
-                };
-            `;
+            let isCancelled = false;
 
             startBtn.addEventListener('click', async () => {
                 const zipFile = zipFileInput.files[0];
@@ -201,158 +190,163 @@
                 statusSection.classList.remove('hidden');
                 progressText.textContent = 'جارٍ بدء العملية...';
                 progressFill.style.width = '0%';
+                isCancelled = false;
 
-                const zipArrayBuffer = await zipFile.arrayBuffer();
-                const zipUint8Array = new Uint8Array(zipArrayBuffer);
+                try {
+                    const zipArrayBuffer = await zipFile.arrayBuffer();
+                    const zipUint8Array = new Uint8Array(zipArrayBuffer);
 
-                const response = await fetch(URL.createObjectURL(dictFile));
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder();
+                    const response = await fetch(URL.createObjectURL(dictFile));
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder();
 
-                let buffer = '';
-                let passwords = [];
-                let totalPasswords = 0;
-                let testedPasswords = 0;
-                let startTime = Date.now();
-                let lastUpdateTime = startTime;
-                let foundPassword = null;
-                let isCancelled = false;
+                    let buffer = '';
+                    let passwords = [];
+                    let totalPasswords = 0;
+                    let testedPasswords = 0;
+                    let startTime = Date.now();
+                    let lastUpdateTime = startTime;
+                    let foundPassword = null;
 
-                const updateStats = () => {
-                    if (isCancelled) return;
-                    const now = Date.now();
-                    const elapsedTotal = (now - startTime) / 1000;
-                    const elapsedSinceLast = (now - lastUpdateTime) / 1000;
-                    if (elapsedSinceLast > 0.5) {
-                        const currentSpeed = (testedPasswords - lastTestedCount) / elapsedSinceLast;
-                        speed.textContent = Math.round(currentSpeed).toString();
-                        lastTestedCount = testedPasswords;
-                        lastUpdateTime = now;
-                    }
-                    remainingCount.textContent = (totalPasswords - testedPasswords).toLocaleString();
-                    if (totalPasswords > 0) {
-                        const progress = (testedPasswords / totalPasswords) * 100;
-                        progressFill.style.width = Math.min(progress, 100) + '%';
-                    }
-                };
+                    const updateStats = () => {
+                        if (isCancelled) return;
+                        const now = Date.now();
+                        const elapsedSinceLast = (now - lastUpdateTime) / 1000;
+                        if (elapsedSinceLast > 0.5) {
+                            const currentSpeed = (testedPasswords - lastTestedCount) / elapsedSinceLast;
+                            speed.textContent = Math.round(currentSpeed).toString();
+                            lastTestedCount = testedPasswords;
+                            lastUpdateTime = now;
+                        }
+                        remainingCount.textContent = (totalPasswords - testedPasswords).toLocaleString();
+                        if (totalPasswords > 0) {
+                            const progress = (testedPasswords / totalPasswords) * 100;
+                            progressFill.style.width = Math.min(progress, 100) + '%';
+                        }
+                    };
 
-                let lastTestedCount = 0;
-                const intervalId = setInterval(updateStats, 500);
+                    let lastTestedCount = 0;
+                    const intervalId = setInterval(updateStats, 500);
 
-                const processPasswords = async () => {
-                    while (!isCancelled) {
-                        const { done, value } = await reader.read();
-                        if (done) break;
+                    const testPassword = (pass) => {
+                        return new Promise((resolve) => {
+                            const workerBlob = new Blob([
+                                `
+                                importScripts('https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js');
+                                self.onmessage = async function(e) {
+                                    const { zipData, password } = e.data;
+                                    try {
+                                        const files = await fflate.unzip(zipData, { password });
+                                        self.postMessage({ found: true, password: password, files: Object.keys(files) });
+                                    } catch (err) {
+                                        self.postMessage({ found: false });
+                                    }
+                                };
+                                `
+                            ], { type: 'application/javascript' });
+                            
+                            const workerUrl = URL.createObjectURL(workerBlob);
+                            const w = new Worker(workerUrl);
+                            
+                            w.onmessage = (e) => {
+                                URL.revokeObjectURL(workerUrl);
+                                if (e.data.found) {
+                                    resolve({ success: true, password: e.data.password, files: e.data.files });
+                                } else {
+                                    resolve({ success: false });
+                                }
+                                w.terminate();
+                            };
+                            
+                            w.postMessage({ zipData: zipArrayBuffer, password: pass });
+                        });
+                    };
 
-                        buffer += decoder.decode(value, { stream: true });
-                        const lines = buffer.split('\\n');
-                        buffer = lines.pop(); // last incomplete line
+                    const processPasswords = async () => {
+                        while (!isCancelled) {
+                            const { done, value } = await reader.read();
+                            if (done) break;
 
-                        for (const line of lines) {
-                            if (isCancelled) break;
-                            const pwd = line.trim();
-                            if (pwd) {
-                                passwords.push(pwd);
-                                totalPasswords++;
-                                
-                                if (passwords.length >= 1000) {
-                                    while (passwords.length > 0 && !isCancelled) {
-                                        const pass = passwords.shift();
-                                        testedPasswords++;
-                                        
-                                        if (!worker) {
-                                            const blob = new Blob([\`importScripts('https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js');\${workerCode}\`], { type: 'application/javascript' });
-                                            worker = new Worker(URL.createObjectURL(blob));
-                                            worker.onmessage = (e) => {
-                                                if (e.data.found) {
-                                                    foundPassword = e.data.password;
-                                                    isCancelled = true;
-                                                    clearInterval(intervalId);
-                                                    self.postMessage({
-                                                        found: true,
-                                                        password: e.data.password,
-                                                        files: e.data.files
-                                                    });
-                                                }
-                                                if (worker) {
-                                                    worker.terminate();
-                                                    worker = null;
-                                                }
-                                            };
-                                        }
-                                        
-                                        if (worker) {
-                                            worker.postMessage({ zipData: zipArrayBuffer, password: pass });
+                            buffer += decoder.decode(value, { stream: true });
+                            const lines = buffer.split('\n');
+                            buffer = lines.pop(); // last incomplete line
+
+                            for (const line of lines) {
+                                if (isCancelled) break;
+                                const pwd = line.trim();
+                                if (pwd) {
+                                    passwords.push(pwd);
+                                    totalPasswords++;
+                                    
+                                    // Process in batches of 100
+                                    if (passwords.length >= 100) {
+                                        while (passwords.length > 0 && !foundPassword && !isCancelled) {
+                                            const pass = passwords.shift();
+                                            testedPasswords++;
+                                            
+                                            const result = await testPassword(pass);
+                                            if (result.success) {
+                                                foundPassword = result.password;
+                                                isCancelled = true;
+                                                clearInterval(intervalId);
+                                                
+                                                resultText.innerHTML = `<div style="color:#2ea043; font-weight:bold;">تم العثور على كلمة المرور!</div><div>كلمة المرور: <strong>${result.password}</strong></div><div>الملفات المستخرجة: ${result.files.join(', ')}</div>`;
+                                                resultSection.className = 'result success';
+                                                resultSection.classList.remove('hidden');
+                                                statusSection.classList.add('hidden');
+                                                startBtn.disabled = false;
+                                                return;
+                                            }
                                         }
                                     }
                                 }
                             }
                         }
-                    }
 
-                    // Process remaining passwords
-                    while (passwords.length > 0 && !foundPassword) {
-                        const pass = passwords.shift();
-                        testedPasswords++;
-                        
-                        if (!worker) {
-                            const blob = new Blob([\`importScripts('https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js');\${workerCode}\`], { type: 'application/javascript' });
-                            worker = new Worker(URL.createObjectURL(blob));
-                            worker.onmessage = (e) => {
-                                if (e.data.found) {
-                                    foundPassword = e.data.password;
-                                    isCancelled = true;
-                                    clearInterval(intervalId);
-                                    self.postMessage({
-                                        found: true,
-                                        password: e.data.password,
-                                        files: e.data.files
-                                    });
-                                }
-                                if (worker) {
-                                    worker.terminate();
-                                    worker = null;
-                                }
-                            };
+                        // Process remaining passwords
+                        while (passwords.length > 0 && !foundPassword && !isCancelled) {
+                            const pass = passwords.shift();
+                            testedPasswords++;
+                            
+                            const result = await testPassword(pass);
+                            if (result.success) {
+                                foundPassword = result.password;
+                                isCancelled = true;
+                                clearInterval(intervalId);
+                                
+                                resultText.innerHTML = `<div style="color:#2ea043; font-weight:bold;">تم العثور على كلمة المرور!</div><div>كلمة المرور: <strong>${result.password}</strong></div><div>الملفات المستخرجة: ${result.files.join(', ')}</div>`;
+                                resultSection.className = 'result success';
+                                resultSection.classList.remove('hidden');
+                                statusSection.classList.add('hidden');
+                                startBtn.disabled = false;
+                                return;
+                            }
                         }
-                        
-                        if (worker) {
-                            worker.postMessage({ zipData: zipArrayBuffer, password: pass });
+
+                        if (!foundPassword && !isCancelled) {
+                            isCancelled = true;
+                            clearInterval(intervalId);
+                            
+                            resultText.textContent = 'انتهت قائمة كلمات المرور دون العثور على المطابقة';
+                            resultSection.className = 'result error';
+                            resultSection.classList.remove('hidden');
+                            statusSection.classList.add('hidden');
+                            startBtn.disabled = false;
                         }
-                    }
+                    };
 
-                    if (!foundPassword && !isCancelled) {
-                        clearInterval(intervalId);
-                        self.postMessage({ found: false, message: 'لم يتم العثور على كلمة المرور في القائمة' });
-                    }
-                };
-
-                const mainWorker = new Worker(URL.createObjectURL(new Blob([`
-                    self.importScripts('https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js');
-                    ${workerCode}
-                `], { type: 'application/javascript' })));
-
-                mainWorker.onmessage = (e) => {
-                    isCancelled = true;
+                    await processPasswords();
+                    
+                } catch (error) {
+                    console.error('Error:', error);
                     clearInterval(intervalId);
+                    isCancelled = true;
                     
-                    if (e.data.found) {
-                        resultText.innerHTML = \`<div style="color:#2ea043; font-weight:bold;">تم العثور على كلمة المرور!</div><div>كلمة المرور: <strong>\${e.data.password}</strong></div><div>الملفات المستخرجة: \${e.data.files.join(', ')}</div>\`;
-                        resultSection.className = 'result success';
-                    } else {
-                        resultText.textContent = e.data.message || 'انتهت العملية دون العثور على كلمة المرور';
-                        resultSection.className = 'result error';
-                    }
-                    
+                    resultText.textContent = `حدث خطأ أثناء العملية: ${error.message}`;
+                    resultSection.className = 'result error';
                     resultSection.classList.remove('hidden');
                     statusSection.classList.add('hidden');
                     startBtn.disabled = false;
-                };
-
-                await processPasswords();
-                
-                if (!foundPassword && !isCancelled) {
-                    mainWorker.postMessage({ found: false, message: 'انتهت قائمة كلمات المرور دون العثور على المطابقة' });
                 }
             });
         });
