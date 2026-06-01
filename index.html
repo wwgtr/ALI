@@ -127,7 +127,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <img src="https://image.qwenlm.ai/public_source/8fecfbcc-34fc-402a-a935-a083d6fee443/1adc9785d-afc9-484a-ab03-e5e6a136c423.png" alt="Application Logo" class="logo">
+            <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiB2aWV3Qm94PSIwIDAgMTAwIDEwMCI+PGNpcmNsZSBjeD0iNTAiIGN5PSI1MCIgcj0iNTAiIGZpbGw9IiMwZDQxOWQiLz48dGV4dCB4PSI1MCIgeT0iNTUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIzMCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkFaPC90ZXh0Pjwvc3ZnPg==" alt="Application Logo" class="logo">
             <h1>فك تشفير ZIP بكلمة مرور</h1>
         </div>
         <div class="content">
@@ -173,7 +173,6 @@
             const resultSection = document.getElementById('resultSection');
             const resultText = document.getElementById('resultText');
 
-            let worker = null;
             let isCancelled = false;
 
             startBtn.addEventListener('click', async () => {
@@ -290,7 +289,7 @@
                                                 isCancelled = true;
                                                 clearInterval(intervalId);
                                                 
-                                                resultText.innerHTML = `<div style="color:#2ea043; font-weight:bold;">تم العثور على كلمة المرور!</div><div>كلمة المرور: <strong>${result.password}</strong></div><div>الملفات المستخرجة: ${result.files.join(', ')}</div>`;
+                                                resultText.innerHTML = \`<div style="color:#2ea043; font-weight:bold;">تم العثور على كلمة المرور!</div><div>كلمة المرور: <strong>\${result.password}</strong></div><div>الملفات المستخرجة: \${result.files.join(', ')}</div>\`;
                                                 resultSection.className = 'result success';
                                                 resultSection.classList.remove('hidden');
                                                 statusSection.classList.add('hidden');
@@ -314,7 +313,7 @@
                                 isCancelled = true;
                                 clearInterval(intervalId);
                                 
-                                resultText.innerHTML = `<div style="color:#2ea043; font-weight:bold;">تم العثور على كلمة المرور!</div><div>كلمة المرور: <strong>${result.password}</strong></div><div>الملفات المستخرجة: ${result.files.join(', ')}</div>`;
+                                resultText.innerHTML = \`<div style="color:#2ea043; font-weight:bold;">تم العثور على كلمة المرور!</div><div>كلمة المرور: <strong>\${result.password}</strong></div><div>الملفات المستخرجة: \${result.files.join(', ')}</div>\`;
                                 resultSection.className = 'result success';
                                 resultSection.classList.remove('hidden');
                                 statusSection.classList.add('hidden');
@@ -342,7 +341,7 @@
                     clearInterval(intervalId);
                     isCancelled = true;
                     
-                    resultText.textContent = `حدث خطأ أثناء العملية: ${error.message}`;
+                    resultText.textContent = \`حدث خطأ أثناء العملية: \${error.message}\`;
                     resultSection.className = 'result error';
                     resultSection.classList.remove('hidden');
                     statusSection.classList.add('hidden');
