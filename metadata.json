@@ -1,0 +1,6 @@
+{
+  "name": "Sayings of Imam Ali and Explanations",
+  "description": "An interactive digital library of the sayings of Imam Ali ibn Abi Talib (p.b.u.h) with rich word-by-word explanations, 10 aesthetic Islamic themes, and a canvas export studio designed for high-resolution downloads in Instagram formats.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
