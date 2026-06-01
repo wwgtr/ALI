@@ -1,78 +1,101 @@
-import React, { useEffect, useState } from 'react';
-import { Wifi, Battery } from 'lucide-react';
+import { ReactNode } from 'react';
+import { motion } from 'motion/react';
+import { Sparkles, Calendar, Moon } from 'lucide-react';
 
 interface PhoneMockupProps {
-  children: React.ReactNode;
-  themeStyle: {
-    bgGradient: string;
-    isDark: boolean;
-  };
+  children: ReactNode;
+  isFullscreen: boolean;
+  onToggleFullscreen: () => void;
+  hijriDayString: string;
 }
 
-export const PhoneMockup: React.FC<PhoneMockupProps> = ({ children, themeStyle }) => {
-  const [time, setTime] = useState('10:44');
-
-  useEffect(() => {
-    const updateTime = () => {
-      const now = new Date();
-      let hours = now.getHours();
-      const minutes = now.getMinutes().toString().padStart(2, '0');
-      const ampm = hours >= 12 ? 'PM' : 'AM';
-      hours = hours % 12 || 12;
-      setTime(`${hours}:${minutes} ${ampm}`);
-    };
-    updateTime();
-    const interval = setInterval(updateTime, 1000);
-    return () => clearInterval(interval);
-  }, []);
+export default function PhoneMockup({ children, isfullscreen, onToggleFullscreen, hijriDayString }: { children: ReactNode; isfullscreen: boolean; onToggleFullscreen: () => void; hijriDayString: string }) {
+  if (isfullscreen) {
+    return <div className="w-full h-screen overflow-hidden select-none bg-stone-900">{children}</div>;
+  }
 
   return (
-    <div className="relative mx-auto flex items-center justify-center py-4 px-2 font-sans" id="iphone-device-wrapper">
-      <div className="absolute -left-1.5 top-[120px] w-1 h-12 bg-slate-700/80 rounded-l" />
-      <div className="absolute -left-1.5 top-[180px] w-1 h-16 bg-slate-700/80 rounded-l" />
-      <div className="absolute -left-1.5 top-[256px] w-1 h-16 bg-slate-700/80 rounded-l" />
-      <div className="absolute -right-1.5 top-[200px] w-1 h-24 bg-slate-700/80 rounded-r" />
-
-      <div
-        className="relative w-full max-w-[430px] rounded-[55px] p-3.5 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] border-[6px] border-[#2a2d33] bg-neutral-950 transition-all duration-700 ring-1 ring-white/10"
-        id="iphone-body-bezel"
-      >
-        <div
-          className={`relative w-full aspect-[9/19.2] min-h-[720px] md:min-h-[812px] rounded-[42px] overflow-hidden flex flex-col transition-all duration-700 bg-gradient-to-b ${themeStyle.bgGradient}`}
-          id="iphone-screen-viewport"
+    <div className="min-h-screen py-10 px-4 flex flex-col justify-center items-center bg-[#0A1A12] [background-image:radial-gradient(rgba(212,175,55,0.12)_1px,transparent_1px)] bg-[size:32px_32px]">
+      
+      {/* Container header for desktop settings overlay info */}
+      <div className="mb-6 flex items-center justify-between w-full max-w-[430px] text-xs font-sans text-stone-400">
+        <div className="flex items-center gap-2">
+          <Moon className="w-3.5 h-3.5 text-amber-500/80 animate-pulse" />
+          <span>تطبيق غرر الحكم - مرآة البلاغة</span>
+        </div>
+        <button
+          onClick={onToggleFullscreen}
+          className="px-3 py-1 rounded-full border border-stone-700 hover:border-amber-500/50 hover:text-amber-200 transition-all font-serif bg-stone-800"
         >
-          <div className="absolute top-0 inset-x-0 h-11 flex items-center justify-between px-7 z-30 select-none" id="iphone-status-bar">
-            <span className={`text-[13px] font-sans font-semibold tracking-wide ${themeStyle.isDark ? 'text-white' : 'text-slate-900'}`}>
-              {time}
-            </span>
+          ملء الشاشة 🗖
+        </button>
+      </div>
 
-            <div className="absolute left-1/2 -translate-x-1/2 top-2 w-[110px] h-[30px] bg-[#0A0A0B] rounded-full flex items-center justify-center border border-white/5 shadow-inner" id="dynamic-island">
-              <div className="w-3 h-3 bg-slate-900 rounded-full ml-auto mr-4 border border-slate-800/60 shadow-inner flex items-center justify-center">
-                <div className="w-1 h-1 bg-indigo-950 rounded-full" />
+      {/* iPhone Device Wrapper */}
+      <div className="relative w-full max-w-[420px] aspect-[9/19.5] rounded-[52px] border-[12px] border-[#1A3026] bg-black shadow-[0_25px_60px_-15px_rgba(0,0,0,0.95)] p-3 overflow-hidden box-border ring-1 ring-[#D4AF37]/30">
+        
+        {/* Shiny bezel highlights */}
+        <div className="absolute top-0 left-4 right-4 h-px bg-white/20 pointer-events-none z-50"></div>
+        <div className="absolute bottom-0 left-4 right-4 h-px bg-white/10 pointer-events-none z-50"></div>
+        <div className="absolute left-0 top-6 bottom-6 w-px bg-white/10 pointer-events-none z-50"></div>
+        <div className="absolute right-0 top-6 bottom-6 w-px bg-white/10 pointer-events-none z-50"></div>
+
+        {/* Volume/Power Physical buttons lookalikes */}
+        <div className="absolute -left-[14px] top-[140px] w-1.5 h-12 bg-neutral-800 rounded-l-md border-y border-stone-600"></div>
+        <div className="absolute -left-[14px] top-[204px] w-1.5 h-14 bg-neutral-800 rounded-l-md border-y border-stone-600"></div>
+        <div className="absolute -left-[14px] top-[270px] w-1.5 h-14 bg-neutral-800 rounded-l-md border-y border-stone-600"></div>
+        <div className="absolute -right-[14px] top-[180px] w-1.5 h-20 bg-neutral-800 rounded-r-md border-y border-stone-600"></div>
+
+        {/* Realistic iOS screen content */}
+        <div className="relative w-full h-full rounded-[40px] bg-neutral-950 overflow-hidden flex flex-col z-30">
+          
+          {/* iOS Top Bar Status & Dynamic Island */}
+          <div className="relative h-12 w-full flex items-center justify-between px-6 select-none bg-stone-950/20 backdrop-blur-md z-40 text-stone-300 font-sans text-xs">
+            
+            {/* Time label */}
+            <span className="font-semibold text-stone-200">11:33</span>
+
+            {/* Dynamic Island */}
+            <motion.div
+              initial={{ width: 110 }}
+              animate={{ width: 140 }}
+              whileHover={{ width: 170 }}
+              transition={{ type: 'spring', stiffness: 200, damping: 18 }}
+              className="absolute top-2.5 left-1/2 -translate-x-1/2 h-7 bg-black rounded-full flex items-center justify-center gap-1.5 px-3 border border-stone-800 z-50 shadow-inner"
+            >
+              <Sparkles className="w-3 h-3 text-amber-400 animate-spin" style={{ animationDuration: '6s' }} />
+              <span className="text-[9px] font-medium text-stone-300 tracking-wider">يا عـلي عليه السلام</span>
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+            </motion.div>
+
+            {/* Connection and battery signals */}
+            <div className="flex items-center gap-1.5 text-stone-200">
+              <span className="text-[9px] opacity-75 font-serif">{hijriDayString}</span>
+              <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                <path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L4.35 19.4a1 1 0 0 0 1.41 1.41l1.79-1.79C9.07 20.26 11.02 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm0 15c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6z"/>
+              </svg>
+              <div className="relative w-5 h-2.5 border border-stone-400 rounded-sm p-0.5 flex items-center">
+                <div className="h-full w-4 bg-emerald-400 rounded-2xs"></div>
+                <div className="absolute -right-1.5 w-1 h-1 bg-stone-400 rounded-r-2xs"></div>
               </div>
             </div>
 
-            <div className={`flex items-center gap-1.5 ${themeStyle.isDark ? 'text-white' : 'text-slate-900'}`} id="status-bar-indicators">
-              <span className="text-[10px] font-mono font-bold tracking-widest uppercase">5G</span>
-              <Wifi className="w-3.5 h-3.5" strokeWidth={2.5} />
-              <div className="flex items-center gap-0.5" id="battery-status-container">
-                <span className="text-[9px] font-sans font-bold">100%</span>
-                <Battery className="w-4 h-4 text-emerald-500 fill-emerald-500" strokeWidth={1} />
-              </div>
-            </div>
           </div>
 
-          <div className="absolute inset-0 top-11 bottom-6 overflow-y-auto px-4 py-2 flex flex-col z-20 no-scrollbar" id="iphone-screen-contents">
+          {/* Actual Application Content */}
+          <div className="flex-1 w-full overflow-hidden flex flex-col relative">
             {children}
           </div>
 
-          <div className="absolute bottom-1.5 inset-x-0 h-1 flex justify-center items-center z-30" id="iphone-home-indicator-container">
-            <div className={`w-[130px] h-1 rounded-full ${themeStyle.isDark ? 'bg-white/40' : 'bg-black/25'}`} id="home-indicator" />
+          {/* iPhone Home Indicator Swipe Bar */}
+          <div className="h-7 w-full flex items-center justify-center bg-transparent z-40 select-none">
+            <div className="w-32 h-1 bg-neutral-600 rounded-full"></div>
           </div>
 
-          <div className="absolute inset-0 pointer-events-none z-10 bg-gradient-to-tr from-white/[0.03] via-transparent to-transparent animate-pulse" id="glare-glass-overlay" />
         </div>
+
       </div>
+
     </div>
   );
-};
+}

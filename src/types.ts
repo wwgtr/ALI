@@ -1,31 +1,43 @@
-export interface WordExplanation {
-  wordAr: string; // الكلمة المراد شرحها
-  meaning: string; // المعنى اللغوي الدقيق
-  context: string; // الأبعاد الأخلاقية والروحية
-  lexicalRoot?: string; // الجذر اللغوي
-}
-
-export interface Saying {
+export interface Quote {
   id: number;
-  arabic: string; // نص الحكمة بتمام الحركات والضبط
-  category: string; // تصنيف الحكمة (أخلاق، علم، صبر، الخ)
-  generalExplanation: string; // الشرح والبيان والتعليق الكامل
-  source: string; // المصدر الشريف (غرر الحكم، نهج البلاغة)
-  wordsExplanation: WordExplanation[]; // التحليل اللغوي للمفردات الأساسية
+  text: string;
+  explanation?: string;
 }
 
-export interface IslamicTheme {
-  id: string;
-  name: string;
-  bgGradient: string;
-  cardBg: string;
-  textColor: string;
-  secondaryTextColor: string;
-  accentTextColor: string;
-  borderColor: string;
-  ornamentColor: string;
-  glowColor: string;
-  isDark: boolean;
+export type ThemeId =
+  | 'najaf_gold'
+  | 'crimson_velvet'
+  | 'shia_turquoise'
+  | 'twilight_blue'
+  | 'clay_sand'
+  | 'obsidian_ash'
+  | 'dusk_saffron'
+  | 'imperial_violet'
+  | 'holy_mint'
+  | 'muhammadan_rose';
+
+export interface ThemeConfig {
+  id: ThemeId;
+  nameAr: string;
+  nameEn: string;
+  bgClass: string;
+  cardBgClass: string;
+  textPrimary: string;
+  textSecondary: string;
+  accentClass: string;
+  borderClass: string;
+  glowClass: string;
+  decorationColor: string;
+  accentColorHex: string;
+  bgGradientStart: string;
+  bgGradientEnd: string;
 }
 
-export type AspectRatioType = '1:1' | '4:5' | '9:16';
+export type ExportDimension = 'instagram_story' | 'instagram_square' | 'instagram_portrait' | 'hd_wallpaper';
+
+export interface ExportConfig {
+  dimension: ExportDimension;
+  includeExplanation: boolean;
+  frameStyle: 'islamic_arch' | 'arabesque_border' | 'minimal_gold' | 'none';
+  backgroundTexture: 'parchment' | 'solid' | 'marble' | 'tile';
+}
